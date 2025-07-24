@@ -1,82 +1,68 @@
-"use client"
-
-import React from "react" // Changed from 'import type'
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useApp } from "@/components/app-provider"
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react";
 
 export function LoginForm() {
-  const router = useRouter()
-  const { playSound, triggerHaptic } = useApp()
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Removed type annotations from parameters
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (error) setError("")
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError("");
+  };
 
-  // Removed type annotation from parameter 'e'
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Mock validation
       if (formData.email === "demo@nulis.com" && formData.password === "password") {
-        playSound("success")
-        triggerHaptic("heavy")
-        router.push("/")
+        alert("Login berhasil!");
       } else {
-        throw new Error("Email atau password tidak valid")
+        throw new Error("Email atau password tidak valid");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      playSound("error")
-      triggerHaptic("light")
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Removed type annotation from parameter 'provider'
   const handleSocialLogin = (provider) => {
-    playSound("click")
-    triggerHaptic("light")
-    // Implement social login
-    console.log(`Login with ${provider}`)
-  }
+    alert(`Login with ${provider}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-in slide-in-from-bottom duration-700">
-        {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="text-4xl mb-2 animate-in zoom-in duration-500">ꦤꦸꦭꦶꦱ꧀</div>
           <h1 className="text-2xl font-bold text-foreground">Nulis Aksara</h1>
           <p className="text-muted-foreground mt-1">Belajar Aksara Jawa dengan Mudah</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-sm border-1 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">Selamat Datang Kembali!</CardTitle>
             <CardDescription>Masuk ke akun Anda untuk melanjutkan pembelajaran</CardDescription>
@@ -91,7 +77,6 @@ export function LoginForm() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email
@@ -110,7 +95,6 @@ export function LoginForm() {
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
@@ -138,14 +122,12 @@ export function LoginForm() {
                 </div>
               </div>
 
-              {/* Forgot Password Link */}
               <div className="text-right">
-                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                <a href="/auth/forgot-password" className="text-sm text-primary hover:underline">
                   Lupa password?
-                </Link>
+                </a>
               </div>
 
-              {/* Login Button */}
               <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -158,7 +140,6 @@ export function LoginForm() {
               </Button>
             </form>
 
-            {/* Divider */}
             <div className="relative">
               <Separator />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -166,7 +147,6 @@ export function LoginForm() {
               </div>
             </div>
 
-            {/* Social Login */}
             <div className="space-y-3">
               <Button
                 type="button"
@@ -196,24 +176,17 @@ export function LoginForm() {
               </Button>
             </div>
 
-            {/* Register Link */}
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Belum punya akun?{" "}
-                <Link href="/auth/register" className="text-primary font-medium hover:underline">
+                <a href="/auth/register" className="text-primary font-medium hover:underline">
                   Daftar di sini
-                </Link>
+                </a>
               </p>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Demo Credentials:</p>
-              <p className="text-xs font-mono">demo@nulis.com / password</p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

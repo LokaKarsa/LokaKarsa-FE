@@ -1,96 +1,77 @@
-"use client"
-
-import React from "react" // Changed from 'import type'
-import { useState } from "react"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useApp } from "@/components/app-provider"
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
 
 export function RegisterForm() {
-  const router = useRouter()
-  const { playSound, triggerHaptic } = useApp()
-
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [acceptTerms, setAcceptTerms] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  // Removed type annotations from parameters
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (error) setError("")
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError("");
+  };
 
   const validateForm = () => {
     if (!formData.fullName.trim()) {
-      throw new Error("Nama lengkap harus diisi")
+      throw new Error("Nama lengkap harus diisi");
     }
     if (!formData.email.includes("@")) {
-      throw new Error("Email tidak valid")
+      throw new Error("Email tidak valid");
     }
     if (formData.password.length < 6) {
-      throw new Error("Password minimal 6 karakter")
+      throw new Error("Password minimal 6 karakter");
     }
     if (formData.password !== formData.confirmPassword) {
-      throw new Error("Konfirmasi password tidak cocok")
+      throw new Error("Konfirmasi password tidak cocok");
     }
     if (!acceptTerms) {
-      throw new Error("Anda harus menyetujui syarat dan ketentuan")
+      throw new Error("Anda harus menyetujui syarat dan ketentuan");
     }
-  }
+  };
 
-  // Removed type annotation from parameter 'e'
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
-      validateForm()
+      validateForm();
 
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      setSuccess(true)
-      playSound("success")
-      triggerHaptic("heavy")
+      setSuccess(true);
 
       // Redirect after success
       setTimeout(() => {
-        router.push("/auth/login")
-      }, 2000)
+        window.location.href = "/auth/login"; // Replace router.push with window.location.href
+      }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      playSound("error")
-      triggerHaptic("light")
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Removed type annotation from parameter 'provider'
   const handleSocialRegister = (provider) => {
-    playSound("click")
-    triggerHaptic("light")
-    console.log(`Register with ${provider}`)
-  }
+    console.log(`Register with ${provider}`);
+  };
 
   if (success) {
     return (
@@ -108,20 +89,19 @@ export function RegisterForm() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-in slide-in-from-bottom duration-700">
-        {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="text-4xl mb-2 animate-in zoom-in duration-500">ꦤꦸꦭꦶꦱ꧀</div>
           <h1 className="text-2xl font-bold text-foreground">Nulis Aksara</h1>
           <p className="text-muted-foreground mt-1">Mulai Perjalanan Belajar Anda</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-sm border-1 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">Buat Akun Baru</CardTitle>
             <CardDescription>Bergabunglah dengan ribuan pelajar aksara Jawa</CardDescription>
@@ -136,7 +116,6 @@ export function RegisterForm() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Full Name Field */}
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-sm font-medium">
                   Nama Lengkap
@@ -155,7 +134,6 @@ export function RegisterForm() {
                 </div>
               </div>
 
-              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email
@@ -174,7 +152,6 @@ export function RegisterForm() {
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
@@ -202,7 +179,6 @@ export function RegisterForm() {
                 </div>
               </div>
 
-              {/* Confirm Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium">
                   Konfirmasi Password
@@ -230,22 +206,20 @@ export function RegisterForm() {
                 </div>
               </div>
 
-              {/* Terms and Conditions */}
-              <div className="flex items-start space-x-2">
+              {/* <div className="flex items-start space-x-2">
                 <Checkbox id="terms" checked={acceptTerms} onCheckedChange={setAcceptTerms} className="mt-1" />
                 <Label htmlFor="terms" className="text-sm leading-relaxed">
                   Saya menyetujui{" "}
-                  <Link href="/terms" className="text-primary hover:underline">
+                  <a href="/terms" className="text-primary hover:underline">
                     Syarat dan Ketentuan
-                  </Link>{" "}
+                  </a>{" "}
                   serta{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">
+                  <a href="/privacy" className="text-primary hover:underline">
                     Kebijakan Privasi
-                  </Link>
+                  </a>
                 </Label>
-              </div>
+              </div> */}
 
-              {/* Register Button */}
               <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
@@ -258,7 +232,6 @@ export function RegisterForm() {
               </Button>
             </form>
 
-            {/* Divider */}
             <div className="relative">
               <Separator />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -266,7 +239,6 @@ export function RegisterForm() {
               </div>
             </div>
 
-            {/* Social Register */}
             <div className="space-y-3">
               <Button
                 type="button"
@@ -296,18 +268,17 @@ export function RegisterForm() {
               </Button>
             </div>
 
-            {/* Login Link */}
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Sudah punya akun?{" "}
-                <Link href="/auth/login" className="text-primary font-medium hover:underline">
+                <a href="/auth/login" className="text-primary font-medium hover:underline">
                   Masuk di sini
-                </Link>
+                </a>
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
