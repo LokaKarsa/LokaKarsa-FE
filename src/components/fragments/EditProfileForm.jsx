@@ -1,113 +1,103 @@
-"use client"
+import React, { useState, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Camera, Eye, EyeOff, Save, X, CheckCircle, AlertCircle } from "lucide-react";
 
-import React from "react"
-import { useState, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
-import { useApp } from "@/components/app-provider"
-import { ArrowLeft, Camera, Eye, EyeOff, Save, X, CheckCircle, AlertCircle } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-
-export function EditProfileForm() {
-  const { state, playSound, triggerHaptic } = useApp()
-  const router = useRouter()
-  const fileInputRef = useRef(null)
+export function EditProfileForm({ onBack }) {
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    fullName: state.user.name,
+    fullName: "Nama Pengguna", // Mock name
     email: "wira.aksara@email.com", // Mock email
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  })
+  });
 
-  const [avatarPreview, setAvatarPreview] = useState(state.user.avatar)
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false,
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (error) setError("")
-    if (success) setSuccess("")
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError("");
+    if (success) setSuccess("");
+  };
 
   const handleAvatarClick = () => {
-    fileInputRef.current?.click()
-    playSound("click")
-    triggerHaptic("light")
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         // 5MB limit
-        setError("Ukuran file maksimal 5MB")
-        return
+        setError("Ukuran file maksimal 5MB");
+        return;
       }
 
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setAvatarPreview(e.target?.result)
-        playSound("success")
-        triggerHaptic("light")
-      }
-      reader.readAsDataURL(file)
+        setAvatarPreview(e.target?.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const togglePasswordVisibility = (field) => {
-    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }))
-    playSound("click")
-    triggerHaptic("light")
-  }
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
 
   const validatePasswordChange = () => {
     if (formData.newPassword || formData.confirmPassword || formData.currentPassword) {
       if (!formData.currentPassword) {
-        throw new Error("Password saat ini harus diisi")
+        throw new Error("Password saat ini harus diisi");
       }
       if (formData.newPassword.length < 6) {
-        throw new Error("Password baru minimal 6 karakter")
+        throw new Error("Password baru minimal 6 karakter");
       }
       if (formData.newPassword !== formData.confirmPassword) {
-        throw new Error("Konfirmasi password baru tidak cocok")
+        throw new Error("Konfirmasi password baru tidak cocok");
       }
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-    setSuccess("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
 
     try {
       // Validate form
       if (!formData.fullName.trim()) {
-        throw new Error("Nama lengkap harus diisi")
+        throw new Error("Nama lengkap harus diisi");
       }
 
-      validatePasswordChange()
+      validatePasswordChange();
 
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      setSuccess("Profil berhasil diperbarui!")
-      playSound("success")
-      triggerHaptic("heavy")
+      setSuccess("Profil berhasil diperbarui!");
 
       // Clear password fields after successful update
       setFormData((prev) => ({
@@ -115,34 +105,30 @@ export function EditProfileForm() {
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
-      }))
+      }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      playSound("error")
-      triggerHaptic("light")
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCancel = () => {
-    playSound("click")
-    triggerHaptic("light")
-    router.back()
-  }
+    if (onBack) {
+      onBack();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-16 z-50">
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/profile">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Kembali
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={handleCancel}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Kembali
+            </Button>
             <h1 className="text-lg font-semibold">Edit Profil</h1>
             <div className="w-20" /> {/* Spacer for centering */}
           </div>
@@ -362,5 +348,5 @@ export function EditProfileForm() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

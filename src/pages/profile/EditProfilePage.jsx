@@ -1,5 +1,8 @@
-import { EditProfileForm } from "@/components/profile/edit-profile-form"
+import { EditProfileForm } from "@/components/fragments/EditProfileForm";
+import { useNavigate } from "react-router";
 
 export default function EditProfilePage() {
-  return <EditProfileForm />
+  const navigate = useNavigate();
+
+  return <EditProfileForm onBack={() => navigate(-1)} />
 }

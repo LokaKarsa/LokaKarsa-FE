@@ -3,29 +3,28 @@
 import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-export function ContributionGraph() {
-  // Generate mock data for the last 180 days
+export function ContributionGraph({ activity }) {
   const generateContributionData = () => {
     const data = []
     const today = new Date()
 
-    for (let i = 179; i >= 0; i--) {
+    for (let i = 194; i >= 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
 
-      // Random practice intensity (0-4)
-      const intensity = Math.floor(Math.random() * 5)
-      const minutes = intensity * 15 // 0, 15, 30, 45, or 60 minutes
+      const isWithinActivityRange = i < (activity > 0 ? activity.length : 0)
+      const intensity = isWithinActivityRange ? Math.floor(Math.random() * 5) : 0
+      const minutes = isWithinActivityRange ? intensity * 15 : 0
 
       data.push({
         date: date.toISOString().split("T")[0],
         intensity,
         minutes,
         displayDate: date.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            }),
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
       })
     }
     return data
@@ -35,34 +34,43 @@ export function ContributionGraph() {
 
   const getIntensityColor = (intensity) => {
     const colors = [
-      "bg-muted/30", // No activity
-      "bg-green-500/30", // Low
-      "bg-green-500/50", // Medium-low
-      "bg-green-500/70", // Medium-high
-      "bg-green-500/90", // High
+      "bg-muted/80",
+      "bg-green-500/30",
+      "bg-green-500/50",
+      "bg-green-500/70",
+      "bg-green-500/90",
     ]
     return colors[intensity]
   }
 
-  // Group data by weeks
   const weeks = []
-  for (let i = 0; i < contributionData.length; i += 7) {
+  for (let i = 0; i < (contributionData?.length > 0 ? contributionData.length : 0); i += 7) {
     weeks.push(contributionData.slice(i, i + 7))
   }
+
+  // Generate dynamic month labels for the last 6 months
+  const generateMonthLabels = () => {
+    const today = new Date()
+    const labels = []
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      labels.push(date.toLocaleDateString("id-ID", { month: "short" }))
+    }
+    return labels
+  }
+
+  const monthLabels = generateMonthLabels()
 
   return (
     <TooltipProvider>
       <div className="space-y-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Jan</span>
-          <span>Mar</span>
-          <span>Mei</span>
-          <span>Jul</span>
-          <span>Sep</span>
-          <span>Nov</span>
+          {monthLabels.map((label, index) => (
+            <span key={index}>{label}</span>
+          ))}
         </div>
 
-        <div className="grid grid-cols-26 gap-1 max-w-full overflow-x-auto">
+        <div className="grid grid-cols-28 gap-1 p-2 max-w-full overflow-x-auto">
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="grid grid-rows-7 gap-1">
               {week.map((day, dayIndex) => (
@@ -70,7 +78,7 @@ export function ContributionGraph() {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className={`w-3 h-3 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getIntensityColor(
+                      className={`w-4 h-4 cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getIntensityColor(
                         day.intensity,
                       )}`}
                       tabIndex={0}

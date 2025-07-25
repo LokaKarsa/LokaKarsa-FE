@@ -1,13 +1,9 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { useApp } from "@/components/app-provider"
-import { ArrowLeft, RotateCcw, Check, SkipForward, Clock, Target } from "lucide-react"
-import Link from "next/link"
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, RotateCcw, Check, SkipForward, Clock, Target } from "lucide-react";
 
 const exercises = [
   {
@@ -31,97 +27,72 @@ const exercises = [
     availableCharacters: ["ꦤ", "ꦩ"],
     distractors: ["ꦒ", "ꦗ", "ꦲ", "ꦱ", "ꦏ"],
   },
-]
+];
 
 export function WordCompositionInterface() {
-  const { state, dispatch, playSound, triggerHaptic } = useApp()
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [composedWord, setComposedWord] = useState([]);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
 
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
-  const [composedWord, setComposedWord] = useState([])
-  const [timeElapsed, setTimeElapsed] = useState(0)
-  const [accuracy, setAccuracy] = useState(0)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [isCorrect, setIsCorrect] = useState(false)
-
-  const currentExercise = exercises[currentExerciseIndex]
+  const currentExercise = exercises[currentExerciseIndex];
   const allCharacters = [...currentExercise.availableCharacters, ...currentExercise.distractors].sort(
-    () => Math.random() - 0.5,
-  )
+    () => Math.random() - 0.5
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1)
-    }, 1000)
+      setTimeElapsed((prev) => prev + 1);
+    }, 1000);
 
-    return () => clearInterval(timer)
-  }, [currentExerciseIndex])
+    return () => clearInterval(timer);
+  }, [currentExerciseIndex]);
 
   const handleCharacterClick = (character) => {
     if (composedWord.length < currentExercise.targetWordJavanese.length) {
-      setComposedWord((prev) => [...prev, character])
-      playSound("click")
-      triggerHaptic("light")
+      setComposedWord((prev) => [...prev, character]);
     }
-  }
+  };
 
   const handleComposedCharacterClick = (index) => {
-    setComposedWord((prev) => prev.filter((_, i) => i !== index))
-    playSound("click")
-    triggerHaptic("light")
-  }
+    setComposedWord((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleCheck = () => {
-    if (composedWord.length === 0) return
+    if (composedWord.length === 0) return;
 
-    playSound("click")
-    triggerHaptic("medium")
-
-    const correct = JSON.stringify(composedWord) === JSON.stringify(currentExercise.targetWordJavanese)
+    const correct = JSON.stringify(composedWord) === JSON.stringify(currentExercise.targetWordJavanese);
     const calculatedAccuracy = correct
       ? 100
       : Math.max(
           0,
           (composedWord.filter((char, index) => char === currentExercise.targetWordJavanese[index]).length /
             currentExercise.targetWordJavanese.length) *
-            100,
-        )
+            100
+        );
 
-    setAccuracy(calculatedAccuracy)
-    setIsCorrect(correct)
-    setShowFeedback(true)
-
-    if (correct) {
-      playSound("success")
-      triggerHaptic("heavy")
-      dispatch({
-        type: "COMPLETE_CHARACTER",
-        accuracy: calculatedAccuracy,
-        timeSpent: timeElapsed,
-      })
-    } else {
-      playSound("error")
-      triggerHaptic("light")
-    }
-  }
+    setAccuracy(calculatedAccuracy);
+    setIsCorrect(correct);
+    setShowFeedback(true);
+  };
 
   const handleClear = () => {
-    setComposedWord([])
-    setAccuracy(0)
-    setShowFeedback(false)
-    playSound("click")
-    triggerHaptic("light")
-  }
+    setComposedWord([]);
+    setAccuracy(0);
+    setShowFeedback(false);
+  };
 
   const handleNext = () => {
     if (currentExerciseIndex < exercises.length - 1) {
-      setCurrentExerciseIndex((prev) => prev + 1)
-      setComposedWord([])
-      setTimeElapsed(0)
-      setAccuracy(0)
-      setShowFeedback(false)
-      playSound("click")
+      setCurrentExerciseIndex((prev) => prev + 1);
+      setComposedWord([]);
+      setTimeElapsed(0);
+      setAccuracy(0);
+      setShowFeedback(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -129,12 +100,10 @@ export function WordCompositionInterface() {
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-16 z-40">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-2">
-            <Link href="/practice">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Kembali
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Kembali
+            </Button>
             <div className="flex items-center space-x-4">
               <Badge variant="secondary">Rangkai Kata</Badge>
               <div className="text-sm text-muted-foreground">
@@ -313,5 +282,5 @@ export function WordCompositionInterface() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,11 +1,9 @@
 import { useAuth } from "@/provider/AuthProvider";
-import { Navigate, Outlet } from "react-router";
+import React from "react";
+import { Navigate } from "react-router";
 
-const AuthLayout = () => {
-    const auth = useAuth();
-    const token = auth?.token;
-    const user = auth?.user;
-    const isLoading = auth?.isLoading;
+const ProtectedRoute = ({ children, fallback = "/auth/login" }) => {
+    const { token, user, isLoading } = useAuth();
 
     // Show loading state while auth is initializing
     if (isLoading) {
@@ -19,15 +17,13 @@ const AuthLayout = () => {
         );
     }
 
-    if (token && user) {
-        return <Navigate to="/" />;
+    // If not authenticated, redirect to fallback (usually login)
+    if (!token || !user) {
+        return <Navigate to={fallback} replace />;
     }
 
-    return (
-        <>
-            <Outlet />
-        </>
-    );
+    // If authenticated, render the protected content
+    return children;
 };
 
-export default AuthLayout;
+export default ProtectedRoute;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "@/provider/AuthProvider";
-import { getUnitQuestions } from "@/hooks/api/main";
+import { getUnitQuestions, submitAnswer } from "@/hooks/api/main";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -95,10 +95,14 @@ export function PracticeInterface() {
         setIsSubmitting(true);
 
         try {
-            // simulasi api call
-            Promise.resolve().then(() => {
-                console.log("Simulating API call for answer submission...");
-            });
+            const response = await submitAnswer(
+                token,
+                currentQuestion.id,
+                isCanvasQuestion
+                    ? currentQuestion.content.correct_answer
+                    : selectedAnswer,
+                isCanvasQuestion ? canvasData : null
+            );
 
             console.log("Submit response:", response);
 
