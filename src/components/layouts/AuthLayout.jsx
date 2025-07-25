@@ -1,12 +1,21 @@
-import React from 'react'
-import { Outlet } from 'react-router'
+import { useAuth } from "@/provider/AuthProvider";
+import { useState } from "react";
+import { Navigate, Outlet } from "react-router";
 
 const AuthLayout = () => {
-  return (
-    <div>
-        <Outlet />
-    </div>
-  )
-}
+    const auth = useAuth();
+    const token = auth?.token;
+    const user = auth?.user;
 
-export default AuthLayout
+    if (token && user) {
+        return <Navigate to="/" />;
+    }
+
+    return (
+        <>
+            <Outlet />
+        </>
+    );
+};
+
+export default AuthLayout;

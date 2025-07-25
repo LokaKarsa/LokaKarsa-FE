@@ -7,8 +7,14 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
+import { useAuth } from "@/provider/AuthProvider";
+import { register } from "@/hooks/api/auth";
+import { Link, useNavigate } from "react-router";
 
 export function RegisterForm() {
+  const auth = useAuth();
+  const setToken = auth?.setToken;
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -21,6 +27,8 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -53,15 +61,16 @@ export function RegisterForm() {
     try {
       validateForm();
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await register(formData.email, formData.password, formData.confirmPassword);
 
-      setSuccess(true);
+      if(response.data) {
+        setToken?.(response.data.access_token);
+        navigate("/");
+        setSuccess(true);
+      } else {
+        setError("Kesalahan, tolong coba lagi");
+      }
 
-      // Redirect after success
-      setTimeout(() => {
-        window.location.href = "/auth/login"; // Replace router.push with window.location.href
-      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
@@ -206,19 +215,12 @@ export function RegisterForm() {
                 </div>
               </div>
 
-              {/* <div className="flex items-start space-x-2">
+              <div className="flex items-start space-x-2">
                 <Checkbox id="terms" checked={acceptTerms} onCheckedChange={setAcceptTerms} className="mt-1" />
                 <Label htmlFor="terms" className="text-sm leading-relaxed">
-                  Saya menyetujui{" "}
-                  <a href="/terms" className="text-primary hover:underline">
-                    Syarat dan Ketentuan
-                  </a>{" "}
-                  serta{" "}
-                  <a href="/privacy" className="text-primary hover:underline">
-                    Kebijakan Privasi
-                  </a>
+                  Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi
                 </Label>
-              </div> */}
+              </div>
 
               <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                 {isLoading ? (

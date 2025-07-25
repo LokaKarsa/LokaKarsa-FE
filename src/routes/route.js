@@ -1,4 +1,7 @@
+import React from "react";
+import RootBoundary from "@/components/fragments/error/RootBoundary";
 import { Dashboard } from "@/components/fragments/dashboard";
+
 import AuthLayout from "@/components/layouts/AuthLayout";
 import MainLayout from "@/components/layouts/MainLayout";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -24,6 +27,7 @@ export const router = createBrowserRouter([
     {
         path: "/auth",
         Component: AuthLayout,
+        ErrorBoundary: RootBoundary,
         children: [
             {
                 index: true,
