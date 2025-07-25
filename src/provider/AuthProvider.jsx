@@ -1,4 +1,4 @@
-import { fetchProfile } from "@/hooks/api/auth";
+import { fetchProfile, logout as logoutAPI } from "@/hooks/api/auth";
 import axios from "axios";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
@@ -40,6 +40,23 @@ const AuthProvider = ({ children }) => {
         delete axios.defaults.headers.common["Authorization"];
     };
 
+    const logout = async () => {
+        try {
+            // Call logout API if token exists
+            if (token) {
+                await logoutAPI(token);
+            }
+        } catch (error) {
+            console.error("Logout API error:", error);
+            // Continue with logout even if API call fails
+        } finally {
+            // Always clear local state and storage
+            resetContext();
+            // Redirect to login page
+            window.location.href = "/auth/login";
+        }
+    };
+
     useEffect(() => {
         const fetchUserProfile = async () => {
             if (token) {
@@ -78,6 +95,7 @@ const AuthProvider = ({ children }) => {
             setToken,
             refreshUserProfile,
             resetContext,
+            logout,
         }),
         [token, user, isLoading]
     );

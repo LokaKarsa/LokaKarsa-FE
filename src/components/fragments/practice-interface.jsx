@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "@/provider/AuthProvider";
-import { getUnitQuestions } from "@/hooks/api/main";
+import {
+    getUnitQuestions,
+    submitAnswer,
+    predictAksara,
+} from "@/hooks/api/main";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,12 +23,14 @@ export function PracticeInterface() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [showResult, setShowResult] = useState(false);
-    const [isCorrect, setIsCorrect] = useState(false);
+    const [submitResponse, setSubmitResponse] = useState(null);
     const [score, setScore] = useState(0);
     const [timeElapsed, setTimeElapsed] = useState(0);
     const [quizCompleted, setQuizCompleted] = useState(false);
     const [canvasData, setCanvasData] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const canvasRefs = useRef(null);
 
     useEffect(() => {
         const fetchQuestions = async () => {
@@ -78,15 +84,74 @@ export function PracticeInterface() {
     const progress =
         ((currentQuestionIndex + 1) / unitData.total_questions) * 100;
     const isCanvasQuestion = currentQuestion?.type === "canvas";
+    const isMultipleChoiceQuestion =
+        currentQuestion?.type === "multiple_choice" &&
+        currentQuestion?.content?.choices;
 
     const handleAnswerSelect = (choice) => {
         if (showResult || isCanvasQuestion) return;
         setSelectedAnswer(choice);
     };
 
-    const handleCanvasSubmit = (imageData) => {
-        setCanvasData(imageData);
-        setSelectedAnswer("canvas_drawing"); // Placeholder for canvas submission
+    const handleCanvasSubmit = async () => {
+        if (isSubmitting) return;
+
+        const canvasRef = canvasRefs.current;
+        if (!canvasRef || !canvasRef.hasDrawn) {
+            alert("Silakan gambar terlebih dahulu!");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // Get canvas blob for AI prediction
+            const blob = await canvasRef.getCanvasBlob();
+            if (!blob) {
+                throw new Error("Gagal mengambil gambar dari canvas");
+            }
+
+            // Call AI prediction
+            const predictionResult = await predictAksara(blob);
+
+            // Check if prediction matches correct answer
+            const isCorrect =
+                predictionResult.prediction ===
+                currentQuestion.content.correct_answer;
+
+            // Create response with AI prediction
+            const mockResponse = {
+                is_correct: isCorrect,
+                correct_answer: currentQuestion.content.correct_answer,
+                predicted_answer: predictionResult.prediction,
+                confidence: predictionResult.confidence,
+                unit_completion_summary: null,
+                newly_unlocked_badges: isCorrect ? ["AI Scholar"] : [],
+            };
+
+            setSubmitResponse(mockResponse);
+            setShowResult(true);
+
+            if (isCorrect) {
+                setScore((prev) => prev + 1);
+            }
+        } catch (error) {
+            console.error("Error processing canvas submission:", error);
+
+            // Fallback response
+            const fallbackResponse = {
+                is_correct: false,
+                correct_answer: currentQuestion.content.correct_answer,
+                error_message: "Gagal memproses gambar. Coba lagi.",
+                unit_completion_summary: null,
+                newly_unlocked_badges: [],
+            };
+
+            setSubmitResponse(fallbackResponse);
+            setShowResult(true);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleSubmitAnswer = async () => {
@@ -95,36 +160,40 @@ export function PracticeInterface() {
         setIsSubmitting(true);
 
         try {
-            // simulasi api call
-            Promise.resolve().then(() => {
-                console.log("Simulating API call for answer submission...");
-            });
+            let answerData = selectedAnswer;
 
+            // For canvas questions, use the canvas data
+            if (isCanvasQuestion && canvasData) {
+                // For canvas questions, just send a simple identifier
+                answerData = "canvas_drawing";
+            }
+
+            const response = await submitAnswer(
+                token,
+                currentQuestion.id,
+                answerData
+            );
             console.log("Submit response:", response);
 
-            // For now, we'll determine correctness based on the response
-            // You might want to adjust this based on your actual API response structure
-            const correct =
-                response.success ||
-                selectedAnswer === currentQuestion.content.correct_answer;
-
-            setIsCorrect(correct);
+            setSubmitResponse(response.data);
             setShowResult(true);
 
-            if (correct) {
+            if (response.data.is_correct) {
                 setScore((prev) => prev + 1);
             }
         } catch (error) {
             console.error("Error submitting answer:", error);
-            // Still show result even if submission fails
-            const correct =
-                !isCanvasQuestion &&
-                selectedAnswer === currentQuestion.content.correct_answer;
-            setIsCorrect(correct);
+
+            // Create a simple mock response for failed submissions
+            let mockResponse = {
+                is_correct: false,
+                correct_answer: currentQuestion.content.correct_answer,
+                unit_completion_summary: null,
+                newly_unlocked_badges: [],
+            };
+
+            setSubmitResponse(mockResponse);
             setShowResult(true);
-            if (correct) {
-                setScore((prev) => prev + 1);
-            }
         } finally {
             setIsSubmitting(false);
         }
@@ -136,6 +205,7 @@ export function PracticeInterface() {
             setSelectedAnswer(null);
             setCanvasData(null);
             setShowResult(false);
+            setSubmitResponse(null);
         } else {
             setQuizCompleted(true);
         }
@@ -146,12 +216,17 @@ export function PracticeInterface() {
         setSelectedAnswer(null);
         setCanvasData(null);
         setShowResult(false);
+        setSubmitResponse(null);
         setScore(0);
         setTimeElapsed(0);
         setQuizCompleted(false);
     };
 
     if (quizCompleted) {
+        // Get all newly unlocked badges from all answers
+        const allUnlockedBadges = [];
+        // This would be collected during the quiz process - for now just show general completion
+
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-lg">
@@ -176,6 +251,23 @@ export function PracticeInterface() {
                                 %
                             </p>
                         </div>
+                        {allUnlockedBadges.length > 0 && (
+                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-sm font-medium text-yellow-800 mb-2">
+                                    🎖️ Badge Baru Terbuka!
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {allUnlockedBadges.map((badge, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+                                        >
+                                            {badge}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div className="flex gap-2 pt-4">
                             <Button
                                 onClick={handleRetryUnit}
@@ -249,38 +341,126 @@ export function PracticeInterface() {
                             /* Canvas Question */
                             <div className="space-y-4">
                                 <WritingCanvas
-                                    onSubmit={handleCanvasSubmit}
+                                    ref={canvasRefs}
                                     disabled={showResult}
+                                    expectedAnswer={
+                                        currentQuestion.content.correct_answer
+                                    }
+                                    showGuide={true}
+                                    targetCharacter={
+                                        currentQuestion.content.correct_answer
+                                    }
                                 />
-                                {showResult && (
+
+                                {/* Submit Button for Canvas */}
+                                {!showResult && (
+                                    <div className="flex justify-center">
+                                        <Button
+                                            onClick={() => handleCanvasSubmit()}
+                                            disabled={isSubmitting}
+                                            size="lg"
+                                            className="px-8"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Mengirim Jawaban...
+                                                </>
+                                            ) : (
+                                                "Submit Jawaban"
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                                {showResult && submitResponse && (
                                     <div
                                         className={`p-4 rounded-lg border-l-4 ${
-                                            isCorrect
+                                            submitResponse.is_correct
                                                 ? "border-green-500 bg-green-50 text-green-700"
                                                 : "border-red-500 bg-red-50 text-red-700"
                                         }`}
                                     >
                                         <div className="flex items-center space-x-2">
-                                            {isCorrect ? (
+                                            {submitResponse.is_correct ? (
                                                 <CheckCircle className="h-5 w-5" />
                                             ) : (
                                                 <XCircle className="h-5 w-5" />
                                             )}
                                             <span className="font-semibold">
-                                                {isCorrect
-                                                    ? "Benar!"
-                                                    : "Belum tepat"}
+                                                {submitResponse.is_correct
+                                                    ? "Hebat! Tulisan Anda Benar!"
+                                                    : "Belum Tepat, Coba Lagi!"}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-sm">
-                                            {isCorrect
-                                                ? `Bagus! Tulisan kamu sudah benar untuk aksara "${currentQuestion.content.correct_answer}".`
-                                                : `Coba lagi! Aksara yang diminta adalah "${currentQuestion.content.correct_answer}".`}
-                                        </p>
+
+                                        {submitResponse.predicted_answer && (
+                                            <div className="mt-2 space-y-1">
+                                                <p className="text-sm">
+                                                    <span className="font-medium">
+                                                        AI menganalisis gambar
+                                                        Anda sebagai:
+                                                    </span>
+                                                    <span className="ml-2 text-2xl font-bold">
+                                                        {
+                                                            submitResponse.predicted_answer
+                                                        }
+                                                    </span>
+                                                </p>
+                                                {submitResponse.confidence && (
+                                                    <p className="text-xs">
+                                                        Tingkat kepercayaan AI:{" "}
+                                                        {(
+                                                            submitResponse.confidence *
+                                                            100
+                                                        ).toFixed(1)}
+                                                        %
+                                                    </p>
+                                                )}
+                                                <p className="text-sm">
+                                                    <span className="font-medium">
+                                                        Jawaban yang benar:
+                                                    </span>
+                                                    <span className="ml-2 text-2xl font-bold">
+                                                        {
+                                                            submitResponse.correct_answer
+                                                        }
+                                                    </span>
+                                                </p>
+                                                {!submitResponse.is_correct && (
+                                                    <p className="text-sm mt-2 text-blue-600">
+                                                        💡 Coba perhatikan
+                                                        bentuk dan garis aksara
+                                                        "
+                                                        {
+                                                            submitResponse.correct_answer
+                                                        }
+                                                        " dengan lebih teliti!
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {submitResponse.error_message && (
+                                            <p className="mt-1 text-sm">
+                                                {submitResponse.error_message}
+                                            </p>
+                                        )}
+                                        {submitResponse.newly_unlocked_badges &&
+                                            submitResponse.newly_unlocked_badges
+                                                .length > 0 && (
+                                                <div className="mt-2 p-2 bg-yellow-100 rounded">
+                                                    <p className="text-sm font-medium text-yellow-800">
+                                                        🎖️ Badge baru terbuka:{" "}
+                                                        {submitResponse.newly_unlocked_badges.join(
+                                                            ", "
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            )}
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        ) : isMultipleChoiceQuestion ? (
                             /* Multiple Choice Question */
                             <div className="space-y-3">
                                 {currentQuestion.content.choices.map(
@@ -292,19 +472,26 @@ export function PracticeInterface() {
                                             }
                                             className={`w-full p-4 rounded-lg border transition-all duration-200 text-left ${
                                                 selectedAnswer === choice
-                                                    ? showResult
-                                                        ? choice ===
-                                                          currentQuestion
-                                                              .content
-                                                              .correct_answer
+                                                    ? showResult &&
+                                                      submitResponse
+                                                        ? submitResponse.is_correct &&
+                                                          choice ===
+                                                              submitResponse.correct_answer
                                                             ? "border-green-500 bg-green-100 text-green-700"
-                                                            : "border-red-500 bg-red-100 text-red-700"
+                                                            : !submitResponse.is_correct &&
+                                                              choice ===
+                                                                  selectedAnswer
+                                                            ? "border-red-500 bg-red-100 text-red-700"
+                                                            : showResult &&
+                                                              choice ===
+                                                                  submitResponse.correct_answer
+                                                            ? "border-green-500 bg-green-100 text-green-700"
+                                                            : "border-primary bg-primary/10 text-primary"
                                                         : "border-primary bg-primary/10 text-primary"
                                                     : showResult &&
+                                                      submitResponse &&
                                                       choice ===
-                                                          currentQuestion
-                                                              .content
-                                                              .correct_answer
+                                                          submitResponse.correct_answer
                                                     ? "border-green-500 bg-green-100 text-green-700"
                                                     : "border-gray-300 hover:border-primary/50 hover:bg-primary/5"
                                             }`}
@@ -316,6 +503,53 @@ export function PracticeInterface() {
                                         </button>
                                     )
                                 )}
+                                {showResult && submitResponse && (
+                                    <div
+                                        className={`p-4 rounded-lg border-l-4 ${
+                                            submitResponse.is_correct
+                                                ? "border-green-500 bg-green-50 text-green-700"
+                                                : "border-red-500 bg-red-50 text-red-700"
+                                        }`}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            {submitResponse.is_correct ? (
+                                                <CheckCircle className="h-5 w-5" />
+                                            ) : (
+                                                <XCircle className="h-5 w-5" />
+                                            )}
+                                            <span className="font-semibold">
+                                                {submitResponse.is_correct
+                                                    ? "Benar!"
+                                                    : "Belum tepat"}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-sm">
+                                            {submitResponse.is_correct
+                                                ? "Jawaban kamu benar!"
+                                                : `Jawaban yang benar adalah "${submitResponse.correct_answer}".`}
+                                        </p>
+                                        {submitResponse.newly_unlocked_badges &&
+                                            submitResponse.newly_unlocked_badges
+                                                .length > 0 && (
+                                                <div className="mt-2 p-2 bg-yellow-100 rounded">
+                                                    <p className="text-sm font-medium text-yellow-800">
+                                                        🎖️ Badge baru terbuka:{" "}
+                                                        {submitResponse.newly_unlocked_badges.join(
+                                                            ", "
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Other Question Types - Fallback */
+                            <div className="text-center p-8 text-muted-foreground">
+                                <p>
+                                    Tipe soal tidak didukung:{" "}
+                                    {currentQuestion?.type}
+                                </p>
                             </div>
                         )}
                     </CardContent>

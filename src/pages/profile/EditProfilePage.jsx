@@ -4,5 +4,5 @@ import { useNavigate } from "react-router";
 export default function EditProfilePage() {
   const navigate = useNavigate();
 
-  return <EditProfileForm onBack={() => navigate(-1)} />
+  return <EditProfileForm onBack={() => navigate("/profile")} />
 }

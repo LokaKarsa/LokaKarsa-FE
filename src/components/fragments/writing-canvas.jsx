@@ -7,11 +7,26 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Send } from "lucide-react";
+import {
+    RotateCcw,
+    Send,
+    Sparkles,
+    CheckCircle,
+    XCircle,
+    Loader2,
+} from "lucide-react";
+import { predictAksara } from "@/hooks/api/main";
 
 export const WritingCanvas = forwardRef(
     (
-        { showGuide, targetCharacter, onStrokeDrawn, onSubmit, disabled },
+        {
+            showGuide,
+            targetCharacter,
+            onStrokeDrawn,
+            onSubmit,
+            disabled,
+            expectedAnswer,
+        },
         ref
     ) => {
         const canvasRef = useRef(null);
@@ -21,7 +36,20 @@ export const WritingCanvas = forwardRef(
         const [guideOpacity, setGuideOpacity] = useState(0.5);
         const [hasDrawn, setHasDrawn] = useState(false);
 
-        useImperativeHandle(ref, () => canvasRef.current);
+        useImperativeHandle(ref, () => ({
+            canvas: canvasRef.current,
+            getCanvasBlob: () => {
+                return new Promise((resolve) => {
+                    const canvas = canvasRef.current;
+                    if (!canvas) {
+                        resolve(null);
+                        return;
+                    }
+                    canvas.toBlob(resolve, "image/png", 0.8);
+                });
+            },
+            hasDrawn: hasDrawn,
+        }));
 
         useEffect(() => {
             const canvas = canvasRef.current;
@@ -37,7 +65,7 @@ export const WritingCanvas = forwardRef(
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
             // Set initial drawing styles
-            ctx.strokeStyle = "#3b82f6";
+            ctx.strokeStyle = "#000000";
             ctx.lineWidth = 4;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
@@ -46,14 +74,14 @@ export const WritingCanvas = forwardRef(
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (showGuide) {
-                drawGuide(
-                    ctx,
-                    canvas.width / window.devicePixelRatio,
-                    canvas.height / window.devicePixelRatio
-                );
+                // drawGuide(
+                //     ctx,
+                //     canvas.width / window.devicePixelRatio,
+                //     canvas.height / window.devicePixelRatio
+                // );
 
                 // Animate guide opacity
-                let opacity = 0.8;
+                let opacity = 1;
                 const fadeInterval = setInterval(() => {
                     opacity -= 0.02;
                     setGuideOpacity(opacity);
@@ -67,7 +95,7 @@ export const WritingCanvas = forwardRef(
 
         const drawGuide = (ctx, width, height) => {
             ctx.save();
-            ctx.strokeStyle = "#6b7280";
+            ctx.strokeStyle = "#fffff";
             ctx.lineWidth = 2;
             ctx.globalAlpha = guideOpacity;
 
@@ -363,15 +391,6 @@ export const WritingCanvas = forwardRef(
             setHasDrawn(false);
         };
 
-        const submitDrawing = () => {
-            const canvas = canvasRef.current;
-            if (!canvas || !onSubmit) return;
-
-            // Convert canvas to data URL
-            const imageData = canvas.toDataURL("image/png");
-            onSubmit(imageData);
-        };
-
         return (
             <div className="relative space-y-4">
                 <canvas
@@ -387,27 +406,17 @@ export const WritingCanvas = forwardRef(
                 />
 
                 {/* Canvas Controls */}
-                {onSubmit && (
-                    <div className="flex gap-2 justify-center">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={clearCanvas}
-                            disabled={!hasDrawn || disabled}
-                        >
-                            <RotateCcw className="h-4 w-4 mr-2" />
-                            Hapus
-                        </Button>
-                        <Button
-                            onClick={submitDrawing}
-                            disabled={!hasDrawn || disabled}
-                            size="sm"
-                        >
-                            <Send className="h-4 w-4 mr-2" />
-                            Kirim
-                        </Button>
-                    </div>
-                )}
+                <div className="flex gap-2 justify-center">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearCanvas}
+                        disabled={!hasDrawn || disabled}
+                    >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Hapus
+                    </Button>
+                </div>
             </div>
         );
     }

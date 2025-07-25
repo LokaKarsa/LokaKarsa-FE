@@ -1,6 +1,7 @@
 import { useAuth } from "@/provider/AuthProvider";
 import React from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
+import { Navigation } from "@/components/fragments/navigation";
 
 const MainLayout = () => {
     const auth = useAuth();
@@ -23,8 +24,10 @@ const MainLayout = () => {
         // If not authenticated, redirect to the login page
         return <Navigate to="/auth/login" />;
     }
+
     return (
         <>
+            <Navigation />
             <Outlet />
         </>
     );

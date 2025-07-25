@@ -20,12 +20,20 @@ import {
     ChevronRight,
     Play,
     BookOpen,
+    User,
+    LogOut,
 } from "lucide-react";
 import { useNavigate } from "react-router"; // Corrected import from 'react-router-dom'
 import { ContributionGraph } from "./contribution-graph";
 import { useApp } from "./app-provider";
 import { getDashboardData } from "@/hooks/api/main";
 import { useAuth } from "@/provider/AuthProvider";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 export function Dashboard() {
     const auth = useAuth();
@@ -116,7 +124,11 @@ export function Dashboard() {
     };
 
     if (isLoading) {
-        return <div>Loading</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
     }
 
     return (
@@ -126,7 +138,11 @@ export function Dashboard() {
                 <div className="flex items-center justify-between animate-in slide-in-from-top duration-500">
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">
-                            Sugeng Rawuh, {user?.name || state.user.name}!
+                            Sugeng Rawuh,{" "}
+                            {user?.firstname && user?.lastname
+                                ? `${user.firstname} ${user.lastname}`
+                                : user?.name || state.user.name || "User"}
+                            !
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Siap untuk berlatih hari ini?
@@ -151,25 +167,26 @@ export function Dashboard() {
                             </div>
                         )}
                     </div>
-                    <div className="relative cursor-pointer" onClick={() => navigate("/profile")}>
-                        <Avatar className="h-12 w-12 ring-2 ring-primary/20 transition-all hover:ring-primary/40">
-                            <AvatarImage
-                                src={
-                                    user?.avatar ||
-                                    state.user.avatar ||
-                                    "/placeholder.svg"
-                                }
-                                alt="User Avatar"
-                            />
-                            <AvatarFallback>
-                                {user?.name?.[0] || state.user.name?.[0]}
-                            </AvatarFallback>
-                        </Avatar>
-                        {streak > 0 && (
-                            <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                                {streak}
-                            </div>
-                        )}
+                    <div className="relative">
+                        <div>
+                            <Avatar className="h-12 w-12 ring-2 ring-primary/20 transition-all hover:ring-primary/40 cursor-pointer">
+                                <AvatarImage
+                                    src={
+                                        user?.avatar ||
+                                        state.user.avatar ||
+                                        "/placeholder.svg"
+                                    }
+                                    alt="User Avatar"
+                                />
+                                <AvatarFallback>
+                                    {user?.firstname?.[0] && user?.lastname?.[0]
+                                        ? user.firstname[0] + user.lastname[0]
+                                        : user?.name?.[0] ||
+                                          state.user.name?.[0] ||
+                                          "U"}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
                     </div>
                 </div>
 

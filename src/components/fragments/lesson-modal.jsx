@@ -52,8 +52,20 @@ export function LessonModal({ level, isOpen, onClose }) {
         triggerHaptic("medium");
         onClose();
 
-        // Navigate to practice page with unit ID
-        navigate(`/practice/${unit.id}`);
+        // Determine if this is a quiz or practice unit
+        // You can modify this logic based on your API structure
+        const isQuizUnit =
+            unit.type === "quiz" ||
+            unit.name?.toLowerCase().includes("kuis") ||
+            unit.name?.toLowerCase().includes("quiz") ||
+            unit.description?.toLowerCase().includes("kuis") ||
+            unit.description?.toLowerCase().includes("quiz");
+
+        if (isQuizUnit) {
+            navigate(`/quiz/${unit.id}`);
+        } else {
+            navigate(`/practice/${unit.id}`);
+        }
     };
 
     const availableUnits =
@@ -68,9 +80,6 @@ export function LessonModal({ level, isOpen, onClose }) {
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <div className="flex items-center space-x-4 mb-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-2xl font-bold text-white">
-                            {level.order}
-                        </div>
                         <div>
                             <DialogTitle className="text-2xl">
                                 {level.name}
@@ -156,19 +165,6 @@ export function LessonModal({ level, isOpen, onClose }) {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Progress Bar */}
-                                {unit.progress?.status !== "locked" && (
-                                    <div className="mt-3">
-                                        <Progress
-                                            value={
-                                                unit.progress
-                                                    ?.completion_percent || 0
-                                            }
-                                            className="h-2"
-                                        />
-                                    </div>
-                                )}
                             </div>
                         )) || (
                             <div className="text-center py-8 text-muted-foreground">

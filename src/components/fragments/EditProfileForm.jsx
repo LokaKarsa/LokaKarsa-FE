@@ -1,10 +1,10 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,341 +12,356 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Camera, Eye, EyeOff, Save, X, CheckCircle, AlertCircle } from "lucide-react";
+import {
+    ArrowLeft,
+    Camera,
+    Eye,
+    EyeOff,
+    Save,
+    X,
+    CheckCircle,
+    AlertCircle,
+} from "lucide-react";
+import { editProfile, fetchProfile } from "@/hooks/api/auth";
+import { useAuth } from "@/provider/AuthProvider";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../ui/select";
 
 export function EditProfileForm({ onBack }) {
-  const fileInputRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const auth = useAuth();
+    const token = auth?.token;
 
-  const [formData, setFormData] = useState({
-    fullName: "Nama Pengguna", // Mock name
-    email: "wira.aksara@email.com", // Mock email
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+    const [profileData, setProfileData] = useState(null);
 
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+    const [formData, setFormData] = useState({});
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (error) setError("");
-    if (success) setSuccess("");
-  };
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false,
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [isCompLoading, setIsCompLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                const res = await fetchProfile(token);
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
-        setError("Ukuran file maksimal 5MB");
-        return;
-      }
+                if (res.success) {
+                    setProfileData(res.data.user_info);
+                    setFormData(res.data.user_info);
+                    setIsLoading(false);
+                } else {
+                    throw new Error("Ada kesalahan");
+                }
+            } catch (error) {
+                console.error("error :", error);
+            }
+        };
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result);
-      };
-      reader.readAsDataURL(file);
+        fetchProfileData();
+    }, []);
+
+    const handleInputChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        if (error) setError("");
+        if (success) setSuccess("");
+    };
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                // 5MB limit
+                setError("Ukuran file maksimal 5MB");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setAvatarPreview(e.target?.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const togglePasswordVisibility = (field) => {
+        setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsCompLoading(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            await editProfile(
+                token,
+                formData.firstname,
+                formData.lastname,
+                formData.bio,
+                formData.sex,
+                formData.region,
+                formData.birthdate
+            )
+                .then((res) => {
+                    console.log("Profil berhasil di update");
+                    setSuccess("Profil berhasil diperbarui!");
+                    setIsCompLoading(false);
+                })
+                .catch((e) => {
+                    console.log("Error : ", error);
+                });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Terjadi kesalahan");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        if (onBack) {
+            onBack();
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
     }
-  };
 
-  const togglePasswordVisibility = (field) => {
-    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
-  };
+    return (
+        <div className="min-h-screen bg-background">
+            {/* Header */}
+            <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+                <div className="max-w-2xl mx-auto px-4 py-4">
+                    <div className="flex items-center justify-between">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancel}
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Kembali
+                        </Button>
+                        <h1 className="text-lg font-semibold">Edit Profil</h1>
+                        <div className="w-20" /> {/* Spacer for centering */}
+                    </div>
+                </div>
+            </div>
 
-  const validatePasswordChange = () => {
-    if (formData.newPassword || formData.confirmPassword || formData.currentPassword) {
-      if (!formData.currentPassword) {
-        throw new Error("Password saat ini harus diisi");
-      }
-      if (formData.newPassword.length < 6) {
-        throw new Error("Password baru minimal 6 karakter");
-      }
-      if (formData.newPassword !== formData.confirmPassword) {
-        throw new Error("Konfirmasi password baru tidak cocok");
-      }
-    }
-  };
+            <div className="max-w-2xl mx-auto px-4 py-8">
+                <Card className="animate-in slide-in-from-bottom duration-500">
+                    <CardHeader>
+                        <CardTitle>Edit Profil</CardTitle>
+                        <CardDescription>
+                            Perbarui informasi profil dan pengaturan akun Anda
+                        </CardDescription>
+                    </CardHeader>
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    setSuccess("");
+                    <CardContent className="space-y-8">
+                        {/* Success/Error Messages */}
+                        {success && (
+                            <Alert className="border-green-200 bg-green-50 text-green-800 animate-in slide-in-from-top duration-300">
+                                <CheckCircle className="h-4 w-4" />
+                                <AlertDescription>{success}</AlertDescription>
+                            </Alert>
+                        )}
 
-    try {
-      // Validate form
-      if (!formData.fullName.trim()) {
-        throw new Error("Nama lengkap harus diisi");
-      }
+                        {error && (
+                            <Alert
+                                variant="destructive"
+                                className="animate-in slide-in-from-top duration-300"
+                            >
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
 
-      validatePasswordChange();
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {/* Personal Information */}
+                            <div className="space-y-6">
+                                <Label className="text-base font-semibold">
+                                    Informasi Pribadi
+                                </Label>
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="firstname">
+                                                Nama Depan
+                                            </Label>
+                                            <Input
+                                                id="firstname"
+                                                value={formData.firstname}
+                                                onChange={(e) =>
+                                                    handleInputChange(
+                                                        "firstname",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                placeholder="Masukkan nama depan"
+                                                required
+                                            />
+                                        </div>
 
-      setSuccess("Profil berhasil diperbarui!");
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lastname">
+                                                Nama Belakang
+                                            </Label>
+                                            <Input
+                                                id="lastname"
+                                                value={formData.lastname}
+                                                onChange={(e) =>
+                                                    handleInputChange(
+                                                        "lastname",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                placeholder="Masukkan nama belakang"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
 
-      // Clear password fields after successful update
-      setFormData((prev) => ({
-        ...prev,
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="sex">
+                                                Jenis Kelamin
+                                            </Label>
+                                            <Select
+                                                onValueChange={(value) =>
+                                                    handleInputChange(
+                                                        "sex",
+                                                        value
+                                                    )
+                                                }
+                                                value={formData.sex || ""}
+                                            >
+                                                <SelectTrigger className="w-full h-12">
+                                                    <SelectValue placeholder="Pilih jenis kelamin" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="male">
+                                                        Laki-laki
+                                                    </SelectItem>
+                                                    <SelectItem value="female">
+                                                        Perempuan
+                                                    </SelectItem>
+                                                    <SelectItem value="other">
+                                                        Lainnya
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-  const handleCancel = () => {
-    if (onBack) {
-      onBack();
-    }
-  };
+                                        {/* birthdate */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="birthdate">
+                                                Tanggal Lahir
+                                            </Label>
+                                            <Input
+                                                id="birthdate"
+                                                type="date"
+                                                value={formData.birthdate || ""}
+                                                onChange={(e) =>
+                                                    handleInputChange(
+                                                        "birthdate",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                placeholder="Masukkan tanggal lahir"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali
-            </Button>
-            <h1 className="text-lg font-semibold">Edit Profil</h1>
-            <div className="w-20" /> {/* Spacer for centering */}
-          </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="region">Wilayah</Label>
+                                        <Input
+                                            id="region"
+                                            value={formData.region || ""}
+                                            onChange={(e) =>
+                                                handleInputChange(
+                                                    "region",
+                                                    e.target.value
+                                                )
+                                            }
+                                            placeholder="Masukkan wilayah"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bio">Bio</Label>
+                                        <Input
+                                            id="bio"
+                                            type="text"
+                                            value={formData.bio}
+                                            onChange={(e) =>
+                                                handleInputChange(
+                                                    "bio",
+                                                    e.target.value
+                                                )
+                                            }
+                                            placeholder="Bio kamu"
+                                            className="h-12"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex space-x-4 pt-6">
+                                <Button
+                                    type="submit"
+                                    className="flex-1 h-12 hover:scale-105 transition-all duration-200"
+                                    disabled={
+                                        isCompLoading ||
+                                        !formData.firstname ||
+                                        !formData.lastname ||
+                                        !formData.bio ||
+                                        !formData.sex ||
+                                        !formData.region ||
+                                        !formData.date_of_birth
+                                    }
+                                >
+                                    {isCompLoading ? (
+                                        <div className="flex items-center justify-center space-x-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>Menyimpan...</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Save className="h-4 w-4 mr-2" />
+                                            Simpan Perubahan
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Card className="animate-in slide-in-from-bottom duration-500">
-          <CardHeader>
-            <CardTitle>Edit Profil</CardTitle>
-            <CardDescription>Perbarui informasi profil dan pengaturan akun Anda</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-8">
-            {/* Success/Error Messages */}
-            {success && (
-              <Alert className="border-green-200 bg-green-50 text-green-800 animate-in slide-in-from-top duration-300">
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>{success}</AlertDescription>
-              </Alert>
-            )}
-
-            {error && (
-              <Alert variant="destructive" className="animate-in slide-in-from-top duration-300">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Avatar Section */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold">Foto Profil</Label>
-                <div className="flex items-center space-x-6">
-                  <div className="relative group">
-                    <Avatar className="h-24 w-24 cursor-pointer transition-all duration-200 group-hover:scale-105">
-                      <AvatarImage src={avatarPreview || "/placeholder.svg"} alt="Profile" />
-                      <AvatarFallback className="text-2xl">{formData.fullName[0]}</AvatarFallback>
-                    </Avatar>
-                    <div
-                      className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      onClick={handleAvatarClick}
-                    >
-                      <Camera className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAvatarClick}
-                      className="hover:scale-105 transition-all duration-200 bg-transparent"
-                    >
-                      <Camera className="h-4 w-4 mr-2" />
-                      Ubah Foto
-                    </Button>
-                    <p className="text-xs text-muted-foreground">JPG, PNG atau GIF. Maksimal 5MB.</p>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Personal Information */}
-              <div className="space-y-6">
-                <Label className="text-base font-semibold">Informasi Pribadi</Label>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nama Lengkap</Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => handleInputChange("fullName", e.target.value)}
-                      placeholder="Masukkan nama lengkap"
-                      className="h-12"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="nama@email.com"
-                      className="h-12"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">Perubahan email memerlukan verifikasi</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Password Change Section */}
-              <div className="space-y-6">
-                <div>
-                  <Label className="text-base font-semibold">Ubah Password</Label>
-                  <p className="text-sm text-muted-foreground mt-1">Kosongkan jika tidak ingin mengubah password</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Password Saat Ini</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showPasswords.current ? "text" : "password"}
-                        value={formData.currentPassword}
-                        onChange={(e) => handleInputChange("currentPassword", e.target.value)}
-                        placeholder="Masukkan password saat ini"
-                        className="pr-10 h-12"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                        onClick={() => togglePasswordVisibility("current")}
-                      >
-                        {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">Password Baru</Label>
-                    <div className="relative">
-                      <Input
-                        id="newPassword"
-                        type={showPasswords.new ? "text" : "password"}
-                        value={formData.newPassword}
-                        onChange={(e) => handleInputChange("newPassword", e.target.value)}
-                        placeholder="Masukkan password baru"
-                        className="pr-10 h-12"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                        onClick={() => togglePasswordVisibility("new")}
-                      >
-                        {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
-                    <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showPasswords.confirm ? "text" : "password"}
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                        placeholder="Ulangi password baru"
-                        className="pr-10 h-12"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                        onClick={() => togglePasswordVisibility("confirm")}
-                      >
-                        {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-4 pt-6">
-                <Button
-                  type="submit"
-                  className="flex-1 h-12 hover:scale-105 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Menyimpan...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Simpan Perubahan
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="h-12 hover:scale-105 transition-all duration-200 bg-transparent"
-                  disabled={isLoading}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Batal
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+    );
 }

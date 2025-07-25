@@ -11,6 +11,7 @@ import { getCurriculumData } from "@/hooks/api/main";
 export function LevelSelectionPath() {
     const auth = useAuth();
     const token = auth?.token;
+    const user = auth?.user;
     const { state, playSound, triggerHaptic } = useApp();
     const [selectedLevel, setSelectedLevel] = useState(null);
     const [curriculum, setCurriculum] = useState(null);
@@ -32,7 +33,11 @@ export function LevelSelectionPath() {
     }, []);
 
     if (isLoading || curriculum === null) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
     }
 
     console.log("Curriculum after push:", curriculum);
@@ -82,7 +87,7 @@ export function LevelSelectionPath() {
                         </Button>
                         <div className="flex items-center space-x-4">
                             <Badge variant="secondary">
-                                {state.user.xp} XP
+                                {user.xp_points} XP
                             </Badge>
                             <Badge variant="outline">
                                 Level {state.user.level}
@@ -118,9 +123,7 @@ export function LevelSelectionPath() {
                             >
                                 {/* Level Node */}
                                 <div
-                                    className={`relative w-24 h-24 rounded-full border-4 flex items-center justify-center cursor-pointer transition-all duration-300 ${getLevelNodeStyle(
-                                        level.progress
-                                    )}`}
+                                    className={`relative w-24 h-24 rounded-full border-4 flex items-center justify-center cursor-pointer transition-all duration-300 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400 shadow-lg shadow-blue-500/25 hover:scale-110`}
                                     onClick={() => handleLevelClick(level)}
                                 >
                                     {level.progress?.status === "locked" ? (

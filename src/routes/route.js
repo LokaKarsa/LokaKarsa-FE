@@ -18,6 +18,7 @@ import BasicLessonPage from "@/pages/Lesson/BasicLessonPage";
 import PracticePage from "@/pages/PracticePage";
 import QuizLessonPage from "@/pages/Lesson/QuizLessonPage";
 import { PracticeInterface } from "@/components/fragments/practice-interface";
+import QuizInterface from "@/components/fragments/quiz-interface";
 
 export const router = createBrowserRouter([
     {
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
             {
                 path: "practice/:unitId",
                 Component: PracticeInterface,
+            },
+            {
+                path: "quiz/:unitId",
+                Component: QuizInterface,
             },
         ],
     },
